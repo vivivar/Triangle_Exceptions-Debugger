@@ -1,0 +1,10 @@
+let
+  x : Integer ~ 0
+in
+  try
+    begin
+      x := 42;
+      throw x
+    end
+  catch e : Integer
+    putint e

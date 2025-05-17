@@ -1,0 +1,4 @@
+try
+  throw 5
+catch e
+  putint e
