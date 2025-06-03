@@ -15,6 +15,7 @@ import Triangle.AbstractSyntaxTrees.Program;
 import Triangle.SyntacticAnalyzer.Parser;
 import Triangle.ContextualAnalyzer.Checker;
 import Triangle.CodeGenerator.Encoder;
+import Triangle.SyntacticAnalyzer.SyntaxError;
 
 
 
@@ -25,8 +26,9 @@ import Triangle.CodeGenerator.Encoder;
  *
  * @author Luis Leopoldo Perez <luiperpe@ns.isi.ulatina.ac.cr>
  */
-public class IDECompiler {
 
+
+public class IDECompiler {
     // <editor-fold defaultstate="collapsed" desc=" Methods ">
     /**
      * Creates a new instance of IDECompiler.
@@ -34,6 +36,7 @@ public class IDECompiler {
      */
     public IDECompiler() {
     }
+    
     
     /**
      * Particularly the same compileProgram method from the Triangle.Compiler
@@ -45,14 +48,12 @@ public class IDECompiler {
         System.out.println("********** " +
                            "Triangle Compiler (IDE-Triangle 1.0)" +
                            " **********");
-        
         System.out.println("Syntactic Analysis ...");
         SourceFile source = new SourceFile(sourceName);
         Scanner scanner = new Scanner(source);
         report = new IDEReporter();
         Parser parser = new Parser(scanner, report);
         boolean success = false;
-        
         rootAST = parser.parseProgram();
         if (report.numErrors == 0) {
             System.out.println("Contextual Analysis ...");

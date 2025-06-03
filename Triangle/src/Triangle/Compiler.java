@@ -23,6 +23,7 @@ import Triangle.ContextualAnalyzer.Checker;
 import Triangle.SyntacticAnalyzer.Parser;
 import Triangle.SyntacticAnalyzer.Scanner;
 import Triangle.SyntacticAnalyzer.SourceFile;
+import Triangle.SyntacticAnalyzer.SyntaxError;
 import Triangle.TreeDrawer.Drawer;
 
 /**
@@ -68,7 +69,6 @@ public class Compiler {
                            "Triangle Compiler (Java Version 2.1)" +
                            " Hola Mundo! " +
                            " **********");
-
         System.out.println("Syntactic Analysis ...");
         SourceFile source = new SourceFile(sourceName);
         scanner.enableDebugging();
@@ -82,8 +82,10 @@ public class Compiler {
         encoder  = new Encoder(reporter);
         drawer   = new Drawer();
 
-        // scanner.enableDebugging();
-        theAST = parser.parseProgram();				// 1st pass
+        scanner.enableDebugging();
+        System.out.println("¡Ejecutando Compiler.java!");
+        theAST = parser.parseProgram();
+	// 1st pass
         if (reporter.numErrors == 0) {
             //if (showingAST) {
             //    drawer.draw(theAST);
