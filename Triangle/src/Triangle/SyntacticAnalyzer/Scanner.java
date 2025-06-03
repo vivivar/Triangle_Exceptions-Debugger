@@ -193,7 +193,7 @@ public final class Scanner {
 
     kind = scanToken();
 
-    // 👇 Agrega esta lógica justo después
+    //Agrega esta lógica justo después
     if (kind == Token.IDENTIFIER) {
       for (int i = Token.ARRAY; i <= Token.WHILE; i++) {
         if (Token.spell(i).equals(currentSpelling.toString())) {

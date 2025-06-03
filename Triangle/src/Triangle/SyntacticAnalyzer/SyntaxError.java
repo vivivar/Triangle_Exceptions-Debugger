@@ -14,7 +14,7 @@
 
 package Triangle.SyntacticAnalyzer;
 
-class SyntaxError extends Exception {
+public class SyntaxError extends Exception {
 
   SyntaxError() {
     super();
@@ -23,5 +23,10 @@ class SyntaxError extends Exception {
   SyntaxError (String s) {
     super(s);
   }
+
+    SyntaxError(String message, String spelling) {
+        //throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        super("ERROR: " + message + " (" + spelling + ")");
+    }
 
 }

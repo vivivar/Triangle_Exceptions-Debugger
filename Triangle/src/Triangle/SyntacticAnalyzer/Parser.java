@@ -96,6 +96,7 @@ public class Parser {
     lexicalAnalyser = lexer;
     errorReporter = reporter;
     previousTokenPosition = new SourcePosition();
+    currentToken = lexicalAnalyser.scan();
   }
 
   // accept checks whether the current token matches tokenExpected.
@@ -110,9 +111,13 @@ public class Parser {
       syntacticError("\"%\" expected here", Token.spell(tokenExpected));
     }
   }
+  
+  
 
   void acceptIt() {
-    previousTokenPosition = currentToken.position;
+    if (currentToken != null) {
+        previousTokenPosition = currentToken.position;
+    }
     currentToken = lexicalAnalyser.scan();
   }
 
@@ -145,23 +150,36 @@ public class Parser {
   ///////////////////////////////////////////////////////////////////////////////
 
   public Program parseProgram() {
+    System.out.println("¡Current token es: " + currentToken.spelling);
+    System.out.println(">> Entrando a parseProgram()");
+
     Program programAST = null;
 
-    previousTokenPosition.start = 0;
-    previousTokenPosition.finish = 0;
-    currentToken = lexicalAnalyser.scan();
+    // Inicia el análisis léxico y posición
+    previousTokenPosition = new SourcePosition(); // asegúrate de inicializar bien
+    start(previousTokenPosition);
+
+    currentToken = lexicalAnalyser.scan(); // primer token
 
     try {
-      Command cAST = parseCommand();
-      programAST = new Program(cAST, previousTokenPosition);
-      if (currentToken.kind != Token.EOT) {
-        syntacticError("\"%\" not expected after end of program", currentToken.spelling);
-      }
+        Command cAST = parseCommand(); // analiza el cuerpo
+        finish(previousTokenPosition); // finaliza la posición del programa
+
+        // Verifica que el último token sea EOT (end of text)
+        if (currentToken.kind != Token.EOT) {
+            System.out.println("Ultimo token en parseProgram: " + currentToken.spelling);
+            syntacticError("\"%\" not expected after end of program", currentToken.spelling);
+        }
+
+        programAST = new Program(cAST, previousTokenPosition);
+
     } catch (SyntaxError s) {
-      return null;
+        return null;
     }
+    System.out.println("Token final: " + currentToken.spelling);
     return programAST;
-  }
+    }
+
 
   ///////////////////////////////////////////////////////////////////////////////
   //
@@ -251,73 +269,52 @@ public class Parser {
   // to represent its phrase structure.
 
   Command parseCommand() throws SyntaxError {
+    System.out.println(">> Entrando a parseCommand()");
     Command commandAST = null; // in case there's a syntactic error
 
     SourcePosition commandPos = new SourcePosition();
 
     start(commandPos);
     commandAST = parseSingleCommand();
+    finish(commandPos);
     while (currentToken.kind == Token.SEMICOLON) {
       acceptIt();
       Command c2AST = parseSingleCommand();
       finish(commandPos);
       commandAST = new SequentialCommand(commandAST, c2AST, commandPos);
     }
+    System.out.println("Final token antes del END: " + currentToken.spelling);
     return commandAST;
   }
 
   Command parseSingleCommand() throws SyntaxError {
+    System.out.println(">> Entrando a parseSingleCommand() con token: " + currentToken.spelling);
+    System.out.println("parseSingleCommand(): currentToken = " + currentToken.spelling + " (" + currentToken.kind + ")");
     Command commandAST = null; // in case there's a syntactic error
 
     SourcePosition commandPos = new SourcePosition();
     start(commandPos);
+    
+    System.out.println("SWITCH recibido token: " + currentToken.spelling + " (" + currentToken.kind + ")");
 
     switch (currentToken.kind) {
 
-      case Token.TRY:
-        acceptIt(); // 'try'
-        Command tryPart = parseSingleCommand(); // lo que va dentro del try
-        accept(Token.CATCH); // 'catch'
-        Identifier exceptionId = parseIdentifier(); // nombre de la excepción
-
-        // ✅ Nuevo: soporte para ": Type"
-        TypeDenoter type = null;
-        if (currentToken.kind == Token.COLON) {
-          acceptIt();
-          type = parseTypeDenoter();
-        }
-
-
-        Command catchPart = parseSingleCommand(); // lo que se hace al capturarla
-        finish(commandPos);
-
-        // 🚨 IMPORTANTE: ahora usamos el nuevo constructor
-        commandAST = new TryCommand(tryPart, exceptionId, type, catchPart, commandPos);
-
-        break;
-
-
-      case Token.THROW: {
-        acceptIt();
-        Expression expr = parseExpression();
-        finish(commandPos);
-        commandAST = new ThrowCommand(expr, commandPos);
-
-      }
-        break;
 
       case Token.IDENTIFIER: {
         Identifier iAST = parseIdentifier();
 
-        // 👇 Detectamos si venimos de un 'catch' y si NO hay ':=', entonces esto no es
-        // una asignación
-        if (previousTokenPosition != null && previousTokenPosition.start > 0 &&
+        /*if (previousTokenPosition != null && previousTokenPosition.start > 0 &&
             currentToken.kind != Token.BECOMES && currentToken.kind != Token.LPAREN) {
-          // Considera que esto no es una asignación ni un llamado a procedimiento
-          // Es probable que venga de: catch e ... → usamos EmptyCommand temporal
           finish(commandPos);
           commandAST = new EmptyCommand(commandPos);
           break;
+        }*/
+        
+        if (currentToken.kind != Token.BECOMES && currentToken.kind != Token.LPAREN && (iAST.spelling.equals("putint") || iAST.spelling.equals("putbool") || iAST.spelling.equals("putline"))) {
+            ActualParameterSequence apsAST = new EmptyActualParameterSequence(currentToken.position);
+            finish(commandPos);
+            commandAST = new CallCommand(iAST, apsAST, commandPos);
+            break;
         }
 
         if (currentToken.kind == Token.LPAREN) {
@@ -338,9 +335,14 @@ public class Parser {
         break;
 
       case Token.BEGIN:
+        System.out.println(">> BEGIN detectado..");
         acceptIt();
         commandAST = parseCommand();
+        System.out.println(">> BEGIN Esperando END, tengo: " + currentToken.spelling); // debug
         accept(Token.END);
+        System.out.println(">> BEGIN Token tras End: " + currentToken.spelling); 
+        //currentToken = lexicalAnalyser.scan();
+        finish(commandPos); 
         break;
 
       case Token.LET: {
@@ -398,6 +400,38 @@ public class Parser {
 
         finish(commandPos);
         commandAST = new ForCommand(iAST, e1AST, e2AST, cAST, isDescending, commandPos);
+      }
+        break;
+        
+     case Token.TRY:
+        System.out.println("Reconocido TRY");
+        acceptIt(); // 'try'
+        Command tryPart = parseCommand(); // lo que va dentro del try
+        accept(Token.CATCH); // 'catch'
+        System.out.println("Reconocido CATCH con identificador: " + currentToken.spelling);
+        Identifier exceptionId = parseIdentifier(); // nombre de la excepción
+
+        TypeDenoter type = null;
+        if (currentToken.kind == Token.COLON) {
+          acceptIt();
+          type = parseTypeDenoter();
+        }
+
+
+        Command catchPart = parseCommand(); // lo que se hace al capturarla
+        finish(commandPos);
+
+        commandAST = new TryCommand(tryPart, exceptionId, type, catchPart, commandPos);
+        System.out.println("Salio del try, Token Actual: " + currentToken.spelling);
+        break;
+
+
+      case Token.THROW: {
+        acceptIt();
+        Expression expr = parseExpression();
+        finish(commandPos);
+        commandAST = new ThrowCommand(expr, commandPos);
+
       }
         break;
 
