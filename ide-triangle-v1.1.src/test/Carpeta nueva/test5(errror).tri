@@ -1,0 +1,3 @@
+begin
+  throw e
+end

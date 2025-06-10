@@ -28,6 +28,7 @@ import Triangle.AbstractSyntaxTrees.CallExpression;
 import Triangle.AbstractSyntaxTrees.CharTypeDenoter;
 import Triangle.AbstractSyntaxTrees.CharacterExpression;
 import Triangle.AbstractSyntaxTrees.CharacterLiteral;
+import Triangle.AbstractSyntaxTrees.Command;
 import Triangle.AbstractSyntaxTrees.ConstActualParameter;
 import Triangle.AbstractSyntaxTrees.ConstDeclaration;
 import Triangle.AbstractSyntaxTrees.ConstFormalParameter;
@@ -86,6 +87,7 @@ import Triangle.AbstractSyntaxTrees.VarActualParameter;
 import Triangle.AbstractSyntaxTrees.VarDeclaration;
 import Triangle.AbstractSyntaxTrees.VarFormalParameter;
 import Triangle.AbstractSyntaxTrees.Visitor;
+import Triangle.AbstractSyntaxTrees.Vname;
 import Triangle.AbstractSyntaxTrees.VnameExpression;
 import Triangle.AbstractSyntaxTrees.WhileCommand;
 import Triangle.SyntacticAnalyzer.SourcePosition;
@@ -671,7 +673,22 @@ public final class Checker implements Visitor {
   }
 
    @Override
-  public Object visitThrowCommand(ThrowCommand ast, Object o) {
+public Object visitThrowCommand(ThrowCommand ast, Object o) {
+
+  // Verifica si la expresión es un VnameExpression para hacer el binding
+  if (ast.expression instanceof VnameExpression) {
+    VnameExpression vExpr = (VnameExpression) ast.expression;
+    if (vExpr.V instanceof SimpleVname) {
+      SimpleVname sv = (SimpleVname) vExpr.V;
+      Declaration d = idTable.retrieve(sv.I.spelling);
+      if (d == null) {
+        reporter.reportError("\"%\" is not declared", sv.I.spelling, sv.I.position);
+      } else {
+        sv.I.decl = d;
+      }
+    }
+  }
+
   TypeDenoter exprType = (TypeDenoter) ast.expression.visit(this, null);
 
   if (currentTry != null && currentTry.type != null) {
@@ -687,42 +704,40 @@ public final class Checker implements Visitor {
 
 
    @Override
-  public Object visitTryCommand(TryCommand ast, Object o) {
-  idTable.openScope();
+public Object visitTryCommand(TryCommand ast, Object o) {
+    idTable.openScope();
 
-  // Guardamos el TryCommand actual para validación en ThrowCommand
-  TryCommand previousTry = currentTry;
-  currentTry = ast;
+    TypeDenoter catchType;
+    if (ast.type != null) {
+      catchType = (TypeDenoter) ast.type.visit(this, null);
+    } else {
+      catchType = new IntTypeDenoter(null); 
+    }
 
-  // Validamos el bloque try
-  ast.tryPart.visit(this, null);
+    ast.type = catchType;
 
-  // Si se especificó un tipo en el catch, lo analizamos
-  TypeDenoter catchType;
-  if (ast.type != null) {
-    catchType = (TypeDenoter) ast.type.visit(this, null);
-  } else {
-    catchType = new IntTypeDenoter(null); // Por defecto, Integer
+    VarDeclaration catchVarDecl = new VarDeclaration(ast.identifier, catchType, ast.identifier.position);
+    ast.identifier.decl = catchVarDecl;
+
+    idTable.enter(ast.identifier.spelling, catchVarDecl);
+
+    TryCommand previousTry = currentTry;
+    currentTry = ast;
+    ast.tryPart.visit(this, null);
+
+    ast.catchPart.visit(this, null);
+
+    currentTry = previousTry;
+
+    idTable.closeScope();
+    return null;
+}
+
+public Object visitCommand(Command command, Object o) {
+  if (command instanceof TryCommand) {
+    return visitTryCommand((TryCommand) command, o);
   }
-
-  // Asociamos el tipo al nodo
-  ast.type = catchType;
-
-  // Declaramos e : catchType
-  VarDeclaration catchVarDecl = new VarDeclaration(ast.identifier, catchType, ast.identifier.position);
-  ast.identifier.decl = catchVarDecl;
-
-  // Insertamos la variable del catch en la tabla de identificadores
-  idTable.enter(ast.identifier.spelling, catchVarDecl);
-
-  // Validamos el bloque catch
-  ast.catchPart.visit(this, null);
-
-  // Restauramos el Try anterior si había uno anidado
-  currentTry = previousTry;
-
-  idTable.closeScope();
-  return null;
+  return command.visit(this, o);
 }
 
   // Value-or-variable names

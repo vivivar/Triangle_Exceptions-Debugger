@@ -1,0 +1,6 @@
+begin
+  try
+    putint(2)
+  catch e
+    putint(9)
+end

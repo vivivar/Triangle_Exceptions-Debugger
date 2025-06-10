@@ -1,6 +1,6 @@
 begin
   try
-    throw 5
+    throw e
   catch e
-    putint(e)
+    putint(1)
 end

@@ -150,8 +150,6 @@ public class Parser {
   ///////////////////////////////////////////////////////////////////////////////
 
   public Program parseProgram() {
-    System.out.println("¡Current token es: " + currentToken.spelling);
-    System.out.println(">> Entrando a parseProgram()");
 
     Program programAST = null;
 
@@ -159,15 +157,12 @@ public class Parser {
     previousTokenPosition = new SourcePosition(); // asegúrate de inicializar bien
     start(previousTokenPosition);
 
-    currentToken = lexicalAnalyser.scan(); // primer token
-
     try {
         Command cAST = parseCommand(); // analiza el cuerpo
         finish(previousTokenPosition); // finaliza la posición del programa
 
         // Verifica que el último token sea EOT (end of text)
         if (currentToken.kind != Token.EOT) {
-            System.out.println("Ultimo token en parseProgram: " + currentToken.spelling);
             syntacticError("\"%\" not expected after end of program", currentToken.spelling);
         }
 
@@ -176,7 +171,6 @@ public class Parser {
     } catch (SyntaxError s) {
         return null;
     }
-    System.out.println("Token final: " + currentToken.spelling);
     return programAST;
     }
 
@@ -269,33 +263,35 @@ public class Parser {
   // to represent its phrase structure.
 
   Command parseCommand() throws SyntaxError {
-    System.out.println(">> Entrando a parseCommand()");
-    Command commandAST = null; // in case there's a syntactic error
+    Command commandAST = null;
 
     SourcePosition commandPos = new SourcePosition();
-
     start(commandPos);
-    commandAST = parseSingleCommand();
-    finish(commandPos);
-    while (currentToken.kind == Token.SEMICOLON) {
-      acceptIt();
-      Command c2AST = parseSingleCommand();
-      finish(commandPos);
-      commandAST = new SequentialCommand(commandAST, c2AST, commandPos);
+
+    if (currentToken.kind == Token.BEGIN) {
+        acceptIt(); 
+        commandAST = parseCommand(); 
+        accept(Token.END); 
+        finish(commandPos);
+    } else {
+        commandAST = parseSingleCommand();
+        finish(commandPos);
+
+        while (currentToken.kind == Token.SEMICOLON) {
+            acceptIt();
+            Command c2AST = parseSingleCommand();
+            finish(commandPos);
+            commandAST = new SequentialCommand(commandAST, c2AST, commandPos);
+        }
     }
-    System.out.println("Final token antes del END: " + currentToken.spelling);
     return commandAST;
-  }
+    }
 
   Command parseSingleCommand() throws SyntaxError {
-    System.out.println(">> Entrando a parseSingleCommand() con token: " + currentToken.spelling);
-    System.out.println("parseSingleCommand(): currentToken = " + currentToken.spelling + " (" + currentToken.kind + ")");
     Command commandAST = null; // in case there's a syntactic error
 
     SourcePosition commandPos = new SourcePosition();
     start(commandPos);
-    
-    System.out.println("SWITCH recibido token: " + currentToken.spelling + " (" + currentToken.kind + ")");
 
     switch (currentToken.kind) {
 
@@ -334,15 +330,12 @@ public class Parser {
       }
         break;
 
-      case Token.BEGIN:
-        System.out.println(">> BEGIN detectado..");
-        acceptIt();
-        commandAST = parseCommand();
-        System.out.println(">> BEGIN Esperando END, tengo: " + currentToken.spelling); // debug
-        accept(Token.END);
-        System.out.println(">> BEGIN Token tras End: " + currentToken.spelling); 
-        //currentToken = lexicalAnalyser.scan();
-        finish(commandPos); 
+    case Token.BEGIN:
+        acceptIt(); 
+        Command blockCommand = parseCommand(); 
+        accept(Token.END); 
+        finish(commandPos);
+        commandAST = blockCommand;
         break;
 
       case Token.LET: {
@@ -404,25 +397,20 @@ public class Parser {
         break;
         
      case Token.TRY:
-        System.out.println("Reconocido TRY");
-        acceptIt(); // 'try'
-        Command tryPart = parseCommand(); // lo que va dentro del try
-        accept(Token.CATCH); // 'catch'
-        System.out.println("Reconocido CATCH con identificador: " + currentToken.spelling);
-        Identifier exceptionId = parseIdentifier(); // nombre de la excepción
+        acceptIt();
+        Command tryPart = parseCommand();
+        accept(Token.CATCH);
+        Identifier exceptionId = parseIdentifier(); 
 
         TypeDenoter type = null;
         if (currentToken.kind == Token.COLON) {
           acceptIt();
           type = parseTypeDenoter();
         }
-
-
-        Command catchPart = parseCommand(); // lo que se hace al capturarla
+        Command catchPart = parseCommand(); 
         finish(commandPos);
 
         commandAST = new TryCommand(tryPart, exceptionId, type, catchPart, commandPos);
-        System.out.println("Salio del try, Token Actual: " + currentToken.spelling);
         break;
 
 

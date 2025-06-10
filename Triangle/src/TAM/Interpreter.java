@@ -568,8 +568,16 @@ public class Interpreter {
           else
             CP = CP + 1;
           break;
+        case Machine.JUMPINDop:
+          ST = ST - 1;
+          CP = data[ST]; 
+          break;
         case Machine.HALTop:
           status = halted;
+          break;
+        case Machine.SETSTop:
+          ST = data[ST - 1]; // Restaura el ST desde el tope
+          CP = CP + 1;
           break;
       }
       if ((CP < CB) || (CP >= CT))
