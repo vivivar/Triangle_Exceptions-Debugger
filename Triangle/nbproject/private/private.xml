@@ -6,6 +6,8 @@
             <file>file:/C:/Users/Asus/Documents/GitHub/Triangle_Exceptions-Debugger/Triangle/src/Triangle/SyntacticAnalyzer/Parser.java</file>
             <file>file:/C:/Users/Asus/Documents/GitHub/Triangle_Exceptions-Debugger/Triangle/src/Triangle/SyntacticAnalyzer/Scanner.java</file>
             <file>file:/C:/Users/Asus/Documents/GitHub/Triangle_Exceptions-Debugger/Triangle/src/Triangle/SyntacticAnalyzer/Token.java</file>
+            <file>file:/C:/Users/Asus/Documents/GitHub/Triangle_Exceptions-Debugger/Triangle/src/Triangle/ContextualAnalyzer/Checker.java</file>
+            <file>file:/C:/Users/Asus/Documents/GitHub/Triangle_Exceptions-Debugger/Triangle/src/Triangle/AbstractSyntaxTrees/TryCommand.java</file>
         </group>
     </open-files>
 </project-private>

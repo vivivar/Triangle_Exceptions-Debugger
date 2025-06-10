@@ -80,6 +80,7 @@ import Triangle.CodeGenerator.UnknownAddress;
 import Triangle.CodeGenerator.UnknownRoutine;
 import Triangle.CodeGenerator.UnknownValue;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.tree.DefaultMutableTreeNode;
 
 /**
  * Implements the Triangle Visitor interface, which is used to
@@ -633,11 +634,41 @@ public class TableVisitor implements Visitor {
 
     @Override
     public Object visitTryCommand(TryCommand ast, Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        DefaultMutableTreeNode tryNode = new DefaultMutableTreeNode("Try");
+
+        ast.tryPart.visit(this, tryNode);
+
+        DefaultMutableTreeNode catchNode = new DefaultMutableTreeNode("Catch: " + ast.identifier.spelling);
+
+        if (ast.type != null) {
+            ast.type.visit(this, catchNode);
+        }
+
+        ast.catchPart.visit(this, catchNode);
+
+        tryNode.add(catchNode);
+
+        if (o instanceof DefaultMutableTreeNode parent) {
+            parent.add(tryNode);
+        }
+
+        return tryNode;
     }
 
     @Override
-    public Object visitThrowCommand(ThrowCommand asy, Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public Object visitThrowCommand(ThrowCommand ast, Object o) {
+        DefaultMutableTreeNode parent = (DefaultMutableTreeNode) o;
+        DefaultMutableTreeNode throwNode = new DefaultMutableTreeNode("THROW");
+
+        Object exprObj = ast.expression.visit(this, throwNode);
+
+        if (exprObj instanceof DefaultMutableTreeNode exprNode) {
+            throwNode.add(exprNode);
+        } else {
+            throwNode.add(new DefaultMutableTreeNode("Expresión no disponible"));
+        }
+
+        parent.add(throwNode);
+        return null;
     }
 }

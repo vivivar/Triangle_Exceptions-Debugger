@@ -50,7 +50,9 @@ public final class Machine {
     JUMPop = 12,
     JUMPIop = 13,
     JUMPIFop = 14,
-    HALTop = 15;
+    HALTop = 15,
+    JUMPINDop = 16,
+    SETSTop = 17;
 
 
 
@@ -135,6 +137,4 @@ public final class Machine {
     putintDisplacement = 26,
     newDisplacement = 27,
     disposeDisplacement = 28;
-    public static int JUMPINDop;
-
 }

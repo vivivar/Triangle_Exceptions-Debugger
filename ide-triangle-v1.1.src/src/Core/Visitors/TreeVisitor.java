@@ -448,11 +448,28 @@ public class TreeVisitor implements Visitor {
 
     @Override
     public Object visitTryCommand(TryCommand ast, Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode("TryCommand");
+
+        node.add((DefaultMutableTreeNode) ast.tryPart.visit(this, null));
+
+        DefaultMutableTreeNode idNode = new DefaultMutableTreeNode("Catch id: " + ast.identifier.spelling);
+        node.add(idNode);
+
+        if (ast.type != null) {
+            node.add((DefaultMutableTreeNode) ast.type.visit(this, null));
+        }
+
+        node.add((DefaultMutableTreeNode) ast.catchPart.visit(this, null));
+
+        return node;
     }
 
     @Override
-    public Object visitThrowCommand(ThrowCommand asy, Object o) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    public Object visitThrowCommand(ThrowCommand ast, Object o) {
+        DefaultMutableTreeNode node = new DefaultMutableTreeNode("ThrowCommand");
+
+        node.add((DefaultMutableTreeNode) ast.expression.visit(this, null));
+
+        return node;
     }
 }

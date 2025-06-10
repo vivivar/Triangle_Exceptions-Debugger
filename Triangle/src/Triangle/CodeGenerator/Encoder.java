@@ -111,55 +111,44 @@ public final class Encoder implements Visitor {
    public Object visitForCommand(ForCommand ast, Object o) {
     Frame frame = (Frame) o;
 
-    // Reservar espacio para la variable de control (loop variable)
     int controlVarSize = ((Integer) ast.I.type.visit(this, null)).intValue();
     emit(Machine.PUSHop, 0, 0, controlVarSize);
-
-    // Evaluar la expresión inicial y asignarla a la variable de control
     ast.E1.visit(this, frame);
     encodeStore(ast.I, frame, controlVarSize);
 
     // Direcciones de salto
     int loopStartAddr = nextInstrAddr;
 
-    // Cargar el valor actual de la variable de control
     encodeFetch(ast.I, frame, controlVarSize);
 
-    // Evaluar la expresión final
     ast.E2.visit(this, frame);
 
-    // Comparar según si es ascendente o descendente
     if (ast.IsDescending) {
-        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.geDisplacement); // >=
+        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.geDisplacement); 
     } else {
-        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.leDisplacement); // <=
+        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.leDisplacement); 
     }
 
     int jumpExitAddr = nextInstrAddr;
-    emit(Machine.JUMPIFop, Machine.falseRep, Machine.CBr, 0); // Salta si la condición es falsa
+    emit(Machine.JUMPIFop, Machine.falseRep, Machine.CBr, 0); 
 
-    // Cuerpo del bucle
     ast.C.visit(this, frame);
 
-    // Incrementar o decrementar la variable de control
     encodeFetch(ast.I, frame, controlVarSize);
-    emit(Machine.LOADLop, 0, 0, 1); // constante 1
+    emit(Machine.LOADLop, 0, 0, 1);
 
     if (ast.IsDescending) {
-        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.subDisplacement); // i := i - 1
+        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.subDisplacement); 
     } else {
-        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.addDisplacement); // i := i + 1
+        emit(Machine.CALLop, Machine.SBr, Machine.PBr, Machine.addDisplacement); 
     }
 
     encodeStore(ast.I, frame, controlVarSize);
 
-    // Volver al inicio del bucle
     emit(Machine.JUMPop, 0, Machine.CBr, loopStartAddr);
 
-    // Poner la dirección de salida del bucle
     patch(jumpExitAddr, nextInstrAddr);
 
-    // Eliminar la variable de control de la pila
     emit(Machine.POPop, 0, 0, controlVarSize);
 
     return null;
@@ -680,40 +669,45 @@ private int handlerAddress = -1; // dirección del handler actual
 
 public Object visitThrowCommand(ThrowCommand ast, Object o) {
   Frame frame = (Frame) o;
-  int size = ((Integer) ast.expression.visit(this, frame)).intValue();
 
-  emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 0); // Guarda el valor en la pila
-  emit(Machine.LOADLop, 0, 0, handlerAddress); // Carga la dirección del handler
-  emit(Machine.JUMPINDop, 0, 0, 0); // Salta indirectamente al catch
+  ast.expression.visit(this, frame);
+  emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 0);
+
+  emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 2); 
+  emit(Machine.SETSTop, 0, 0, 0); 
+  emit(Machine.LOADLop, 0, 0, handlerAddress);
+  emit(Machine.JUMPINDop, 0, 0, 0);
 
   return null;
 }
 
 public Object visitTryCommand(TryCommand ast, Object o) {
   Frame frame = (Frame) o;
-  int oldHandler = handlerAddress; // Guarda el handler anterior
+  int oldHandler = handlerAddress;
 
   int jumpAddrAfterTry;
-  handlerAddress = nextInstrAddr; // Apunta al inicio del catch
+  handlerAddress = nextInstrAddr; 
+
+  emit(Machine.LOADLop, 0, 0, handlerAddress); 
+  emit(Machine.LOADop, 0, Machine.STr, 0);      
+  emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 2); 
 
   ast.tryPart.visit(this, frame);
 
   jumpAddrAfterTry = nextInstrAddr;
-  emit(Machine.JUMPop, 0, 0, 0); // Salta después del catch
+  emit(Machine.JUMPop, 0, 0, 0); 
 
   int catchStart = nextInstrAddr;
   patch(jumpAddrAfterTry, catchStart);
 
-  // Cargar el valor de la excepción
   emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 0);
 
-  // Guardar la excepción en una variable local (offset 0)
   emit(Machine.STOREop, Machine.integerSize, frame.level, frame.size);
 
   Frame catchFrame = new Frame(frame.level, frame.size + 1);
   ast.catchPart.visit(this, catchFrame);
 
-  handlerAddress = oldHandler; // Restaura handler anterior
+  handlerAddress = oldHandler;
   return null;
 }
 

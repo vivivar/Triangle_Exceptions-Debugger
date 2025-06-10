@@ -193,9 +193,8 @@ public final class Scanner {
 
     kind = scanToken();
 
-    //Agrega esta lógica justo después
     if (kind == Token.IDENTIFIER) {
-      for (int i = Token.ARRAY; i <= Token.WHILE; i++) {
+      for (int i = Token.firstReservedWord; i <= Token.lastReservedWord; i++) {
         if (Token.spell(i).equals(currentSpelling.toString())) {
           kind = i;
           break;
@@ -204,6 +203,7 @@ public final class Scanner {
     }
 
     pos.finish = sourceFile.getCurrentLine();
+    
     tok = new Token(kind, currentSpelling.toString(), pos);
     if (debug)
       System.out.println(tok);
