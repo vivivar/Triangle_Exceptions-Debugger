@@ -19,11 +19,19 @@ import java.io.DataInputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import TAM.Instruction;
+
+import javax.swing.*;
+import java.awt.*;
 
 public class Interpreter {
 
 
   static String objectName;
+  private static int PC, CB, SB, ST, LB;
+  private static Instruction[] code;
+
+  private static DebuggerWindow debugger;
 
 
 // DATA STORE
@@ -34,12 +42,10 @@ public class Interpreter {
 // DATA STORE REGISTERS AND OTHER REGISTERS
 
   final static int
-    CB = 0,
-    SB = 0,
     HB = 1024;  // = upper bound of data array + 1
 
-  static int
-    CT, CP, ST, HT, LB, status;
+ public static int
+    CT, CP, HT, status;
 
   // status values
   final static int
@@ -636,5 +642,93 @@ public class Interpreter {
       interpretProgram();
       showStatus();
     }
+    // Inicializar registros y código (esto depende de cómo se cargue el programa en tu TAM)
+        code = loadSampleCode(); // Esto es una función simulada. Reemplázala con tu carga real
+        PC = 0; CB = 0; SB = 0; ST = 0; LB = 0;
+
+        debugger = new DebuggerWindow();
+
+        while (PC < code.length) {
+            // Ejecutar instrucción actual (esto depende de tu implementación de TAM)
+            Instruction instr = code[PC];
+            executeInstruction(instr); // Simulado, debes usar tu lógica de ejecución
+
+            // Mostrar debugger
+            if (debugger != null) {
+                String[] codeLines = new String[code.length];
+                for (int i = 0; i < code.length; i++) {
+                    codeLines[i] = code[i].toString();
+                }
+
+                debugger.updateDebugger(codeLines, PC, CB, SB, ST, LB);
+
+                try {
+                    Thread.sleep(200); // Para observar los cambios paso a paso
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            PC++; // Incrementar PC (o usar lógica real de salto)
+        }
+    }
+
+    // Método simulado para cargar código
+    private static Instruction[] loadSampleCode() {
+        Instruction[] sample = new Instruction[5];
+        for (int i = 0; i < 5; i++) {
+            sample[i] = new Instruction(); // Reemplazar con instancias válidas
+        }
+        return sample;
+    }
+
+    // Método simulado para ejecutar una instrucción
+    private static void executeInstruction(Instruction instr) {
+        // Simula la ejecución (aquí iría tu lógica real de TAM)
   }
+}
+
+class DebuggerWindow extends JFrame {
+    private JTextArea codeArea;
+    private JTextArea registersArea;
+
+    public DebuggerWindow() {
+        setTitle("TAM Debugger");
+        setSize(800, 600);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        codeArea = new JTextArea();
+        registersArea = new JTextArea();
+
+        codeArea.setEditable(false);
+        registersArea.setEditable(false);
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,
+                new JScrollPane(codeArea), new JScrollPane(registersArea));
+        splitPane.setDividerLocation(400);
+
+        add(splitPane);
+        setVisible(true);
+    }
+
+    public void updateDebugger(String[] codeLines, int pc, int cb, int sb, int st, int lb) {
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < codeLines.length; i++) {
+            if (i == pc) {
+                code.append(">> ").append(codeLines[i]).append("\n");
+            } else {
+                code.append("   ").append(codeLines[i]).append("\n");
+            }
+        }
+        codeArea.setText(code.toString());
+
+        StringBuilder regs = new StringBuilder();
+        regs.append("PC: ").append(pc).append("\n");
+        regs.append("CB: ").append(cb).append("\n");
+        regs.append("SB: ").append(sb).append("\n");
+        regs.append("ST: ").append(st).append("\n");
+        regs.append("LB: ").append(lb).append("\n");
+
+        registersArea.setText(regs.toString());
+    }
 }
