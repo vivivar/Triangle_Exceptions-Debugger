@@ -7,6 +7,10 @@
 
 package Triangle;
 
+import GUI.FileFrame;
+import TAM.Instruction;
+import TAM.Machine;
+import static TAM.Machine.code;
 import Triangle.CodeGenerator.Frame;
 import java.awt.event.ActionListener;
 import Triangle.SyntacticAnalyzer.SourceFile;
@@ -34,8 +38,17 @@ public class IDECompiler {
      * Creates a new instance of IDECompiler.
      *
      */
-    public IDECompiler() {
+    
+    private FileFrame fileFrame;
+    private IDEReporter reporter;
+    public IDECompiler(FileFrame fileFrame, IDEReporter reporter) {
+        this.fileFrame = fileFrame;
+        this.reporter = reporter;
     }
+
+
+
+    
     
     
     /**
@@ -44,40 +57,43 @@ public class IDECompiler {
      * @param sourceName Path to the source file.
      * @return True if compilation was succesful.
      */
-    public boolean compileProgram(String sourceName) {
-        System.out.println("********** " +
-                           "Triangle Compiler (IDE-Triangle 1.0)" +
-                           " **********");
-        System.out.println("Syntactic Analysis ...");
-        SourceFile source = new SourceFile(sourceName);
-        Scanner scanner = new Scanner(source);
-        report = new IDEReporter();
-        Parser parser = new Parser(scanner, report);
-        boolean success = false;
-        rootAST = parser.parseProgram();
+public boolean compileProgram(String sourceName) {
+    System.out.println("********** " +
+                       "Triangle Compiler (IDE-Triangle 1.0)" +
+                       " **********");
+    System.out.println("Syntactic Analysis ...");
+    SourceFile source = new SourceFile(sourceName);
+    Scanner scanner = new Scanner(source);
+    report = new IDEReporter();
+    Parser parser = new Parser(scanner, report);
+    boolean success = false;
+    rootAST = parser.parseProgram();
+    if (report.numErrors == 0) {
+        System.out.println("Contextual Analysis ...");
+        Checker checker = new Checker(report);
+        checker.check(rootAST);
         if (report.numErrors == 0) {
-            System.out.println("Contextual Analysis ...");
-            Checker checker = new Checker(report);
-            checker.check(rootAST);
-            if (report.numErrors == 0) {
-                System.out.println("Code Generation ...");
-                Encoder encoder = new Encoder(report);
-                encoder.encodeRun(rootAST, false);
-                
-                if (report.numErrors == 0) {
-                    encoder.saveObjectProgram(sourceName.replace(".tri", ".tam"));
-                    success = true;
-                }
-            }
-        }
+            System.out.println("Code Generation ...");
+            Encoder encoder = new Encoder(report);
+            encoder.encodeRun(rootAST, false);
 
-        if (success)
-            System.out.println("Compilation was successful.");
-        else
-            System.out.println("Compilation was unsuccessful.");
-        
-        return(success);
+            Instruction[] code = Machine.code;
+            if (report.numErrors == 0) {
+                encoder.saveObjectProgram(sourceName.replace(".tri", ".tam"));
+                success = true;
+            }
+            fileFrame.loadDebugger(code);
+        }
     }
+
+    if (success)
+        System.out.println("Compilation was successful.");
+    else
+        System.out.println("Compilation was unsuccessful.");
+    
+    return(success);
+}
+
       
     /**
      * Returns the line number where the first error is.

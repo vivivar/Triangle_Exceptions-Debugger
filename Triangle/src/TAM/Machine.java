@@ -60,6 +60,7 @@ public final class Machine {
 
   public static Instruction[] code = new Instruction[1024];
 
+  public static final int HEAPSIZE = 1024;
 
 // CODE STORE REGISTERS
 
