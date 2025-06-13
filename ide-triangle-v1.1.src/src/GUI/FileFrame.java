@@ -18,6 +18,7 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.text.Element;
 import javax.swing.tree.DefaultMutableTreeNode;
 import TAM.Instruction;
+import GUI.DebuggerPanel;
 
 import javax.swing.*;
 import java.awt.*;
@@ -48,6 +49,10 @@ public class FileFrame extends javax.swing.JInternalFrame {
         enterButton.addActionListener(delegateEnter);
         sourcePane.addMouseListener(delegateMouse);
         previouslyModified = false;
+    }
+    
+    public FileFrame() {
+        initComponents();
     }
 
     /**
@@ -310,6 +315,12 @@ public class FileFrame extends javax.swing.JInternalFrame {
         tableScroll.add(idTable);
         tableScroll.setViewportView(idTable);
     }
+    
+    public void loadDebugger(Instruction[] code) {
+        DebuggerPanel debuggerPanel = new DebuggerPanel(code);
+        jTabbedPane1.removeAll();
+        jTabbedPane1.addTab("Debugger", debuggerPanel);
+    }
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -409,6 +420,7 @@ public class FileFrame extends javax.swing.JInternalFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
 
     // <editor-fold defaultstate="collapsed" desc=" GUI Variables ">
     // Variables declaration - do not modify//GEN-BEGIN:variables

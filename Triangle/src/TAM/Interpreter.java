@@ -25,10 +25,18 @@ import javax.swing.*;
 import java.awt.*;
 
 public class Interpreter {
+    
+  public Interpreter(Instruction[] code) {
+    this.code = code;
+  }
 
 
   static String objectName;
-  private static int PC, CB, SB, ST, LB;
+    public static int PC;
+    public static int CB;
+    public static int SB;
+    public static int ST;
+    public static int LB;
   private static Instruction[] code;
 
   private static DebuggerWindow debugger;
@@ -97,6 +105,19 @@ public class Interpreter {
         return 0;
     }
   }
+  
+  
+public void initializeMachine() {
+    CP = 0;
+    ST = 0;
+    SB = 0;
+    LB = 0;
+    HT = Machine.HEAPSIZE;
+    status = running;
+}
+  
+  
+    
 
 
 // PROGRAM STATUS
@@ -438,11 +459,12 @@ public class Interpreter {
     }
   }
 
-  static void interpretProgram() {
+  public static void interpretProgram() {
     // Runs the program in code store.
 
     Instruction currentInstr;
     int op, r, n, d, addr, index;
+    
 
     // Initialize registers ...
     ST = SB;
@@ -636,6 +658,8 @@ public class Interpreter {
       objectName = args[0];
   	else
       objectName = "obj.tam";
+    
+    initializeMachine();
 
     loadObjectProgram(objectName);
     if (CT != CB) {
@@ -731,4 +755,6 @@ class DebuggerWindow extends JFrame {
 
         registersArea.setText(regs.toString());
     }
+    
+    
 }
