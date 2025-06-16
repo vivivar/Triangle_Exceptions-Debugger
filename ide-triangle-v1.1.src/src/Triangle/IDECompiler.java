@@ -77,10 +77,7 @@ public boolean compileProgram(String sourceName) {
             Encoder encoder = new Encoder(report);
             encoder.encodeRun(rootAST, false);
             
-            for (int addr = Machine.CB; addr < encoder.getNextInstrAddr(); addr++) {
-                Instruction instr = Machine.code[addr];
-                System.out.println(addr + ": " + instr.op + " " + instr.n + " " + instr.r + " " + instr.d);
-            }
+
 
 
             Instruction[] code = Machine.code;

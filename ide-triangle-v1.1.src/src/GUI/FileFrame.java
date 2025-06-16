@@ -326,7 +326,6 @@ public DebuggerPanel getDebuggerPanel() {
     
     
     public void loadDebugger(Instruction[] code) {
-        System.out.println("Llamando loadDebugger(): código tiene " + code.length + " instrucciones");
 
         SwingUtilities.invokeLater(() -> {
             debuggerPanel.loadCode(code);

@@ -473,8 +473,8 @@ public void initializeMachine() {
 
   public static void interpretProgram() {
     // Runs the program in code store.
-    System.out.println(">>> Iniciando interpretProgram");
-    System.out.println("CP=" + CP + ", ST=" + ST + ", SB=" + SB + ", HT=" + HT);
+    //System.out.println(">>> Iniciando interpretProgram");
+    //System.out.println("CP=" + CP + ", ST=" + ST + ", SB=" + SB + ", HT=" + HT);
     Instruction currentInstr;
     int op, r, n, d, addr, index;
     
@@ -499,7 +499,7 @@ public void initializeMachine() {
       //System.out.println("Antes del switch: CP=" + CP + " ST=" + ST);
       switch (op) {
         case Machine.LOADop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = d + content(r);
           checkSpace(n);
           for (index = 0; index < n; index++)
@@ -508,7 +508,7 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.LOADAop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = d + content(r);
           checkSpace(1);
           data[ST] = addr;
@@ -516,7 +516,7 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.LOADIop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 1;
           addr = data[ST];
           checkSpace(n);
@@ -526,14 +526,14 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.LOADLop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           checkSpace(1);
           data[ST] = d;
           ST = ST + 1;
           CP = CP + 1;
           break;
         case Machine.STOREop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = d + content(r);
           ST = ST - n;
           for (index = 0; index < n; index++)
@@ -541,7 +541,7 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.STOREIop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 1;
           addr = data[ST];
           ST = ST - n;
@@ -550,7 +550,7 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.CALLop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = d + content(r);
           if (addr >= Machine.PB) {
             callPrimitive(addr - Machine.PB);
@@ -569,7 +569,7 @@ public void initializeMachine() {
           }
           break;
         case Machine.CALLIop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 2;
           addr = data[ST + 1];
           if (addr >= Machine.PB) {
@@ -585,7 +585,7 @@ public void initializeMachine() {
           }
           break;
         case Machine.RETURNop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = LB - d;
           CP = data[LB + 2];
           LB = data[LB + 1];
@@ -595,13 +595,13 @@ public void initializeMachine() {
           ST = addr + n;
           break;
         case Machine.PUSHop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           checkSpace(d);
           ST = ST + d;
           CP = CP + 1;
           break;
         case Machine.POPop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           addr = ST - n - d;
           ST = ST - n;
           for (index = 0; index < n; index++)
@@ -610,16 +610,16 @@ public void initializeMachine() {
           CP = CP + 1;
           break;
         case Machine.JUMPop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           CP = d + content(r);
           break;
         case Machine.JUMPIop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 1;
           CP = data[ST];
           break;
         case Machine.JUMPIFop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 1;
           if (data[ST] == n)
             CP = d + content(r);
@@ -627,27 +627,27 @@ public void initializeMachine() {
             CP = CP + 1;
           break;
         case Machine.JUMPINDop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = ST - 1;
           CP = data[ST]; 
           break;
         case Machine.HALTop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           status = halted;
           break;
         case Machine.SETSTop:
-          System.out.println("Ejecutando instrucción: op=" + op + ", CP=" + CP + ", ST=" + ST);
+          
           ST = data[ST - 1]; 
           CP = CP + 1;
           break;
       }
       if ((CP < CB) || (CP >= CT)){
-          System.out.println("Entró al IF de invalid code address: CP=" + CP + " CT=" + CT + " CB=" + CB);
+
           status = failedInvalidCodeAddress;
       }
         
     } while (status == running);
-    System.out.println("Saliendo de interpretProgram(), status = " + status);
+
   }
 
 
@@ -699,15 +699,10 @@ public static void main(String[] args) {
     // Cargar el programa TAM
     loadObjectProgram(objectName);
 
-    // Mostrar el código TAM desensamblado
-    for (int i = CB; i < CT; i++) {
-        System.out.println(i + ": " + Machine.code[i].toString());
-    }
 
     // Ejecutar el programa normalmente (este sí ejecuta putint, throw, etc)
     if (CT != CB) {
         interpretProgram();
-        System.out.println("Llamando a showStatus()");
         showStatus();
     }
 
