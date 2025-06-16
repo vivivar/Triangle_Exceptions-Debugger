@@ -334,13 +334,17 @@ public class Disassembler {
   /**
    * Writes all instructions of the program in code store.
    */
-  private static void disassembleProgram() {
+private static void disassembleProgram() {
     for (int addr = Machine.CB; addr < CT; addr++) {
-      System.out.print (addr + ":  ");
-      writeInstruction(Machine.code[addr]);
-      System.out.println();
+        if (Machine.code[addr] != null) {  // protección anti-null
+            System.out.print(addr + ":  ");
+            writeInstruction(Machine.code[addr]);
+            System.out.println();
+        }
     }
-  }
+}
+  
+  
 
 
 // LOADING

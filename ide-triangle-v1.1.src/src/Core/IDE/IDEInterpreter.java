@@ -4,7 +4,11 @@
  */
 
 package Core.IDE;
+import GUI.FileFrame;
+import TAM.Interpreter;
+import TAM.Machine;
 import java.awt.event.ActionListener;
+import javax.swing.SwingUtilities;
 
 /**
  * Just another small class to call the Triangle interpreter.
@@ -14,13 +18,16 @@ import java.awt.event.ActionListener;
 public class IDEInterpreter {
     
     // <editor-fold defaultstate="collapsed" desc=" Methods ">    
-    
+    private FileFrame fileFrame;  
+    private ActionListener delegate;
+
     /**
      * Creates a new instance of IDEInterpreter.
      * @param _delegate Event to be fired when the thread stops running.
      */
-    public IDEInterpreter(ActionListener _delegate) {
-        delegate = _delegate;
+    public IDEInterpreter(FileFrame fileFrame, ActionListener _delegate) {
+        this.delegate = _delegate;
+        this.fileFrame = fileFrame;
     }
     
     /**
@@ -35,9 +42,11 @@ public class IDEInterpreter {
             }
         }).start();
     }      
+    
+    
+}
     // </editor-fold>
     
     // <editor-fold defaultstate="collapsed" desc=" Attributes ">
-    private ActionListener delegate;    // Gets triggered when the Interpreter stops.
     // </editor-fold>
-}
+

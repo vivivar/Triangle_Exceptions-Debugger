@@ -40,6 +40,8 @@ import Core.Visitors.TreeVisitor;
 import javax.swing.tree.DefaultMutableTreeNode;
 import GUI.FileFrame;
 import Triangle.IDEReporter;
+import java.awt.event.KeyEvent;
+import javax.swing.event.InternalFrameAdapter;
 
 /**
  * The Main class. Contains the main form.
@@ -62,9 +64,6 @@ public class Main extends javax.swing.JFrame {
         setSize(640, 480);
         setVisible(true);
         directory = new File(".");
-        
-        FileFrame fileFrame = new FileFrame();
-        fileFrame.setVisible(true);
     }
     
     /**
@@ -728,6 +727,16 @@ public class Main extends javax.swing.JFrame {
         }        
     };
     
+    KeyAdapter delegateKey = new KeyAdapter() {
+        public void keyReleased(KeyEvent e) {}
+    };
+
+
+    InternalFrameListener delegateFrame = new InternalFrameAdapter() {
+        public void internalFrameClosing(InternalFrameEvent e) {}
+    };
+
+    
     /**
      * Several events for the MDI text editor frames. 
      */
@@ -859,14 +868,14 @@ public class Main extends javax.swing.JFrame {
     
     // <editor-fold defaultstate="collapsed" desc=" Non-GUI Variables ">
     // [ Non-GUI variables declaration ]
-    FileFrame fileFrame = new FileFrame();
+    FileFrame fileFrame = new FileFrame(delegateKey, delegateMouse, delegateFrame, delegateEnter);
     IDEReporter reporter = new IDEReporter();
 
     int untitledCount = 1;                                                  // Counts "Untitled" document names (e.g. "Untitled-1")
     clipBoard Clip = new clipBoard();                                       // Clipboard Management
     IDECompiler compiler = new IDECompiler(fileFrame, reporter);                               // Compiler - Analyzes/generates TAM programs
     IDEDisassembler disassembler = new IDEDisassembler();                   // Disassembler - Generates TAM Code
-    IDEInterpreter interpreter = new IDEInterpreter(delegateRun);           // Interpreter - Runs TAM programs
+    IDEInterpreter interpreter = new IDEInterpreter(fileFrame, delegateRun);           // Interpreter - Runs TAM programs
     OutputRedirector output = new OutputRedirector();                       // Redirects the console output
     InputRedirector input = new InputRedirector(delegateInput);             // Redirects console input
     TreeVisitor treeVisitor = new TreeVisitor();                            // Draws the Abstract Syntax Trees

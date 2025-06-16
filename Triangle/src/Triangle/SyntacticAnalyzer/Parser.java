@@ -158,7 +158,7 @@ public class Parser {
     start(previousTokenPosition);
 
     try {
-        Command cAST = parseCommand(); // analiza el cuerpo
+        Command cAST = parseSingleCommand(); // analiza el cuerpo
         finish(previousTokenPosition); // finaliza la posición del programa
 
         // Verifica que el último token sea EOT (end of text)
@@ -262,16 +262,24 @@ public class Parser {
   // parseCommand parses the command, and constructs an AST
   // to represent its phrase structure.
 
-  Command parseCommand() throws SyntaxError {
+Command parseCommand() throws SyntaxError {
     Command commandAST = null;
 
     SourcePosition commandPos = new SourcePosition();
     start(commandPos);
 
     if (currentToken.kind == Token.BEGIN) {
-        acceptIt(); 
-        commandAST = parseCommand(); 
-        accept(Token.END); 
+        acceptIt();
+        commandAST = parseSingleCommand();  // <--- CAMBIO AQUÍ
+        
+        while (currentToken.kind == Token.SEMICOLON) {
+            acceptIt();
+            Command c2AST = parseSingleCommand();
+            finish(commandPos);
+            commandAST = new SequentialCommand(commandAST, c2AST, commandPos);
+        }
+
+        accept(Token.END);
         finish(commandPos);
     } else {
         commandAST = parseSingleCommand();
@@ -285,7 +293,7 @@ public class Parser {
         }
     }
     return commandAST;
-    }
+}
 
   Command parseSingleCommand() throws SyntaxError {
     Command commandAST = null; // in case there's a syntactic error

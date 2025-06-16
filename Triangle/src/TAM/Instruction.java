@@ -27,6 +27,11 @@ public class Instruction {
     n = 0;
     d = 0;
   }
+  
+  @Override
+  public String toString() {
+        return op + " " + n + " " + r + " " + d;
+    }
 
   // Java has no type synonyms, so the following representations are
   // assumed:

@@ -23,6 +23,7 @@ import javax.swing.text.TableView.TableRow;
 
 import TAM.Instruction;
 import TAM.Machine;
+import TAM.ObjectFileHeader;
 import Triangle.ErrorReporter;
 import Triangle.StdEnvironment;
 import Triangle.AbstractSyntaxTrees.AST;
@@ -94,9 +95,12 @@ import Triangle.AbstractSyntaxTrees.Visitor;
 import Triangle.AbstractSyntaxTrees.Vname;
 import Triangle.AbstractSyntaxTrees.VnameExpression;
 import Triangle.AbstractSyntaxTrees.WhileCommand;
+import java.util.List;
+import java.util.ArrayList;
 
 public final class Encoder implements Visitor {
-
+    
+  private final List<Integer> pendingAfterCatchJumps = new ArrayList<Integer>();
 
   // Commands
   public Object visitAssignCommand(AssignCommand ast, Object o) {
@@ -156,32 +160,52 @@ public final class Encoder implements Visitor {
 
 
 
-  public Object visitCallCommand(CallCommand ast, Object o) {
+    public Object visitCallCommand(CallCommand ast, Object o) {
     Frame frame = (Frame) o;
     Integer argsSize = (Integer) ast.APS.visit(this, frame);
-    ast.I.visit(this, new Frame(frame.level, argsSize));
+
+    String procName = ast.I.spelling;
+
+    if (procName.equals("putint")) { 
+        ast.APS.visit(this, frame);
+        emit(Machine.CALLop, 0, Machine.PBr, Machine.putintDisplacement);
+    } else if (procName.equals("puteol")) {
+        emit(Machine.CALLop, 0, Machine.PBr, Machine.puteolDisplacement);
+    } else {
+        ast.I.visit(this, new Frame(frame.level, argsSize));
+    }
+
     return null;
-  }
+}
 
   public Object visitEmptyCommand(EmptyCommand ast, Object o) {
     return null;
   }
 
-  public Object visitIfCommand(IfCommand ast, Object o) {
+public Object visitIfCommand(IfCommand ast, Object o) {
+    System.out.println(">>> Estoy en el visitIfCommand correcto");
     Frame frame = (Frame) o;
-    int jumpifAddr, jumpAddr;
 
-    Integer valSize = (Integer) ast.E.visit(this, frame);
-    jumpifAddr = nextInstrAddr;
-    emit(Machine.JUMPIFop, Machine.falseRep, Machine.CBr, 0);
+    ast.E.visit(this, frame);
+    
+    int jumpToElse = nextInstrAddr;
+    emit(Machine.JUMPIFop, Machine.falseRep, 0, 0);  // <-- El cambio crítico aquí
+
     ast.C1.visit(this, frame);
-    jumpAddr = nextInstrAddr;
-    emit(Machine.JUMPop, 0, Machine.CBr, 0);
-    patch(jumpifAddr, nextInstrAddr);
+    
+    int jumpAfterThen = nextInstrAddr;
+    emit(Machine.JUMPop, 0, 0, 0);
+    
+    int elseAddr = nextInstrAddr;
+    patch(jumpToElse, elseAddr);
+    
     ast.C2.visit(this, frame);
-    patch(jumpAddr, nextInstrAddr);
+    
+    int afterIfAddr = nextInstrAddr;
+    patch(jumpAfterThen, afterIfAddr);
+
     return null;
-  }
+}
 
   public Object visitLetCommand(LetCommand ast, Object o) {
     Frame frame = (Frame) o;
@@ -667,49 +691,54 @@ public final class Encoder implements Visitor {
 // En Encoder.java
 private int handlerAddress = -1; // dirección del handler actual
 
-public Object visitThrowCommand(ThrowCommand ast, Object o) {
-  Frame frame = (Frame) o;
-
-  ast.expression.visit(this, frame);
-  emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 0);
-
-  emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 2); 
-  emit(Machine.SETSTop, 0, 0, 0); 
-  emit(Machine.LOADLop, 0, 0, handlerAddress);
-  emit(Machine.JUMPINDop, 0, 0, 0);
-
-  return null;
-}
 
 public Object visitTryCommand(TryCommand ast, Object o) {
-  Frame frame = (Frame) o;
-  int oldHandler = handlerAddress;
+    Frame frame = (Frame) o;
+    int oldHandler = handlerAddress;
 
-  int jumpAddrAfterTry;
-  handlerAddress = nextInstrAddr; 
+    int loadHandlerAddrInstr = nextInstrAddr;
+    emit(Machine.LOADLop, 0, 0, 0);
+    emit(Machine.LOADop, 0, Machine.STr, 0);
+    emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 2);
 
-  emit(Machine.LOADLop, 0, 0, handlerAddress); 
-  emit(Machine.LOADop, 0, Machine.STr, 0);      
-  emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 2); 
+    handlerAddress = nextInstrAddr;
 
-  ast.tryPart.visit(this, frame);
+    ast.tryPart.visit(this, frame);
 
-  jumpAddrAfterTry = nextInstrAddr;
-  emit(Machine.JUMPop, 0, 0, 0); 
+    int jumpAddrAfterTry = nextInstrAddr;
+    emit(Machine.JUMPop, 0, 0, 0);
 
-  int catchStart = nextInstrAddr;
-  patch(jumpAddrAfterTry, catchStart);
+    int catchStart = nextInstrAddr;
 
-  emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 0);
+    patch(loadHandlerAddrInstr, catchStart);
 
-  emit(Machine.STOREop, Machine.integerSize, frame.level, frame.size);
+    emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 0);
+    emit(Machine.STOREop, Machine.integerSize, frame.level, frame.size);
 
-  Frame catchFrame = new Frame(frame.level, frame.size + 1);
-  ast.catchPart.visit(this, catchFrame);
+    Frame catchFrame = new Frame(frame.level, frame.size + 1);
+    ast.catchPart.visit(this, catchFrame);
+    patch(jumpAddrAfterTry, nextInstrAddr);
+    handlerAddress = oldHandler;
 
-  handlerAddress = oldHandler;
-  return null;
+    return null;
 }
+
+
+public Object visitThrowCommand(ThrowCommand ast, Object o) {
+    Frame frame = (Frame) o;
+
+    ast.expression.visit(this, frame); 
+    emit(Machine.STOREop, Machine.integerSize, Machine.SBr, 0);
+
+    emit(Machine.LOADop, Machine.integerSize, Machine.SBr, 2); 
+    emit(Machine.SETSTop, 0, 0, 0); 
+
+    emit(Machine.JUMPINDop, 0, 0, 0);
+
+    return null;
+}
+
+
 
 
   // Literals, Identifiers and Operators
@@ -744,28 +773,40 @@ public Object visitTryCommand(TryCommand ast, Object o) {
     return null;
   }
 
-  public Object visitOperator(Operator ast, Object o) {
+public Object visitOperator(Operator ast, Object o) {
     Frame frame = (Frame) o;
+
     if (ast.decl.entity instanceof KnownRoutine) {
-      ObjectAddress address = ((KnownRoutine) ast.decl.entity).address;
-      emit(Machine.CALLop, displayRegister (frame.level, address.level),
-       Machine.CBr, address.displacement);
-    } else if (ast.decl.entity instanceof UnknownRoutine) {
-      ObjectAddress address = ((UnknownRoutine) ast.decl.entity).address;
-      emit(Machine.LOADop, Machine.closureSize, displayRegister(frame.level,
-           address.level), address.displacement);
-      emit(Machine.CALLIop, 0, 0, 0);
-    } else if (ast.decl.entity instanceof PrimitiveRoutine) {
-      int displacement = ((PrimitiveRoutine) ast.decl.entity).displacement;
-      if (displacement != Machine.idDisplacement)
-        emit(Machine.CALLop, Machine.SBr, Machine.PBr, displacement);
-    } else if (ast.decl.entity instanceof EqualityRoutine) { // "=" or "\="
-      int displacement = ((EqualityRoutine) ast.decl.entity).displacement;
-      emit(Machine.LOADLop, 0, 0, frame.size / 2);
-      emit(Machine.CALLop, Machine.SBr, Machine.PBr, displacement);
+        ObjectAddress address = ((KnownRoutine) ast.decl.entity).address;
+        emit(Machine.CALLop, displayRegister(frame.level, address.level), Machine.CBr, address.displacement);
     }
+    
+
+    else if (ast.decl.entity instanceof UnknownRoutine) {
+        ObjectAddress address = ((UnknownRoutine) ast.decl.entity).address;
+        emit(Machine.LOADop, Machine.closureSize, displayRegister(frame.level, address.level), address.displacement);
+        emit(Machine.CALLIop, 0, 0, 0);
+    }
+
+
+    else if (ast.decl.entity instanceof PrimitiveRoutine) {
+        int displacement = ((PrimitiveRoutine) ast.decl.entity).displacement;
+        
+        // El idDisplacement es un caso especial (normalmente para identificadores), por lo general lo saltamos
+        if (displacement != Machine.idDisplacement)
+            emit(Machine.CALLop, Machine.SBr, Machine.PBr, displacement);
+    }
+
+
+    else if (ast.decl.entity instanceof EqualityRoutine) {
+        int displacement = ((EqualityRoutine) ast.decl.entity).displacement;
+
+        emit(Machine.LOADLop, 0, 0, Machine.integerSize);
+        emit(Machine.CALLop, Machine.SBr, Machine.PBr, displacement);
+    }
+
     return null;
-  }
+}
 
 
   // Value-or-variable names
@@ -816,10 +857,12 @@ public Object visitTryCommand(TryCommand ast, Object o) {
 
 
   // Programs
-  public Object visitProgram(Program ast, Object o) {
-    return ast.C.visit(this, o);
-  }
-
+public Object visitProgram(Program ast, Object o) {
+    handlerAddress = -1; //Resetea el handler
+    ast.C.visit(this, o);
+    emit(Machine.HALTop, 0, 0, 0);
+    return null;
+}
   public Encoder (ErrorReporter reporter) {
     this.reporter = reporter;
     nextInstrAddr = Machine.CB;
@@ -902,29 +945,48 @@ public Object visitTryCommand(TryCommand ast, Object o) {
 
   // Saves the object program in the named file.
 
-  public void saveObjectProgram(String objectName) {
+public void saveObjectProgram(String objectName) {
     FileOutputStream objectFile = null;
     DataOutputStream objectStream = null;
 
-    int addr;
-
     try {
-      objectFile = new FileOutputStream (objectName);
-      objectStream = new DataOutputStream (objectFile);
+        objectFile = new FileOutputStream(objectName);
+        objectStream = new DataOutputStream(objectFile);
 
-      addr = Machine.CB;
-      for (addr = Machine.CB; addr < nextInstrAddr; addr++)
-        Machine.code[addr].write(objectStream);
-      objectFile.close();
+        int actualCodeLength = 0;
+        for (int addr = Machine.CB; addr < nextInstrAddr; addr++) {
+            if (Machine.code[addr] != null)
+                actualCodeLength++;
+        }
+
+        // Carga del debugger
+        ObjectFileHeader header = new ObjectFileHeader(
+            "dummySourceName",
+            actualCodeLength,
+            0
+        );
+        header.write(objectStream);
+
+        for (int addr = Machine.CB; addr < nextInstrAddr; addr++) {
+            if (Machine.code[addr] != null)
+                Machine.code[addr].write(objectStream);
+        }
+
+        objectFile.close();
     } catch (FileNotFoundException s) {
-      System.err.println ("Error opening object file: " + s);
+        System.err.println("Error opening object file: " + s);
     } catch (IOException s) {
-      System.err.println ("Error writing object file: " + s);
+        System.err.println("Error writing object file: " + s);
     }
-  }
+}
+
+
 
   boolean tableDetailsReqd;
-
+  
+    public int getNextInstrAddr() {
+        return nextInstrAddr;
+    }
   public static void writeTableDetails(AST ast) {
   }
 

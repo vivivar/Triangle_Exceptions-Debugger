@@ -30,6 +30,8 @@ import java.awt.*;
  * @author Luis Leopoldo Perez <luiperpe@ns.isi.ulatina.ac.cr>
  */
 public class FileFrame extends javax.swing.JInternalFrame {
+    
+    private DebuggerPanel debuggerPanel;
 
     // <editor-fold defaultstate="collapsed" desc=" Methods ">
     /**
@@ -41,19 +43,25 @@ public class FileFrame extends javax.swing.JInternalFrame {
      * @param delegateEnter Event to fire when the "Enter Input" button is
      * pressed.
      */
-    public FileFrame(KeyAdapter delegateKey, MouseListener delegateMouse, InternalFrameListener delegateFrame, ActionListener delegateEnter) {
-        initComponents();
-        previouslySaved = false;
-        sourcePane.addKeyListener(delegateKey);
-        addInternalFrameListener(delegateFrame);
-        enterButton.addActionListener(delegateEnter);
-        sourcePane.addMouseListener(delegateMouse);
-        previouslyModified = false;
-    }
-    
-    public FileFrame() {
-        initComponents();
-    }
+public FileFrame(KeyAdapter delegateKey, MouseListener delegateMouse, InternalFrameListener delegateFrame, ActionListener delegateEnter) {
+    initComponents();
+
+    tabbedPane.remove(jTabbedPane1);
+
+    debuggerPanel = new DebuggerPanel(new Instruction[0]);
+    //tabbedPane.addTab("TAM Debugger", debuggerPanel);
+
+    previouslySaved = false;
+    sourcePane.addKeyListener(delegateKey);
+    addInternalFrameListener(delegateFrame);
+    enterButton.addActionListener(delegateEnter);
+    sourcePane.addMouseListener(delegateMouse);
+    previouslyModified = false;
+}
+
+public DebuggerPanel getDebuggerPanel() {
+    return debuggerPanel;
+}
 
     /**
      * Returns the text in the editor window.
@@ -316,10 +324,15 @@ public class FileFrame extends javax.swing.JInternalFrame {
         tableScroll.setViewportView(idTable);
     }
     
+    
     public void loadDebugger(Instruction[] code) {
-        DebuggerPanel debuggerPanel = new DebuggerPanel(code);
-        jTabbedPane1.removeAll();
-        jTabbedPane1.addTab("Debugger", debuggerPanel);
+        System.out.println("Llamando loadDebugger(): código tiene " + code.length + " instrucciones");
+
+        SwingUtilities.invokeLater(() -> {
+            debuggerPanel.loadCode(code);
+            debuggerPanel.repaint();
+            debuggerPanel.revalidate();
+        });
     }
     // </editor-fold>
 
